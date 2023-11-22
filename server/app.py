@@ -39,6 +39,7 @@ class ResearchById(Resource):
                 db.session.commit()
                 return {}, 204
             except Exception as e:
+                db.session.rollback()
                 return {"error" : str(e)}
         return {"error": "Research paper not found"}, 404
     
@@ -51,6 +52,22 @@ class Authors(Resource):
     
 api.add_resource(Authors, "/authors")
 
+class AuthorById(Resource):
+    def patch(self, id):
+        if author_by_id := db.session.get(Author, id):
+            try:
+                for k in request.get_json():
+                    setattr(author_by_id, k, request.get_json()[k])
+                db.session.add(author_by_id)
+                db.session.commit()
+                return author_by_id.to_dict(), 200
+            except Exception as e:
+                db.session.rollback()
+                return {'error' : [str(e)]}
+        return {"error" : "Author cannot be found"}
+    
+api.add_resource(AuthorById, "/author/<int:id>")
+
 class ResearchAuthor(Resource):
     def post(self):
         try:
@@ -60,6 +77,7 @@ class ResearchAuthor(Resource):
             db.session.commit()
             return new_ra.to_dict(), 200
         except Exception as e:
+            db.session.rollback()
             return {"error" : [str(e)]}
         
 api.add_resource(ResearchAuthor, '/research_author')
